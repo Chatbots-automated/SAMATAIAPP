@@ -1,46 +1,54 @@
-import { View, StyleSheet, ScrollView, Platform } from 'react-native';
-import { Text, TextInput, Button, Card, SegmentedButtons, Portal, Modal, IconButton } from 'react-native-paper';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text, TextInput, Button, Card, SegmentedButtons } from 'react-native-paper';
 import { useState } from 'react';
-import { useRouter } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import MaterialInput from '@/components/MaterialInput';
 import { useEstimateStore } from '@/store/estimateStore';
 import { EstimateFormData, Material, Labor } from '@/types/estimate';
 import { spacing, theme, borderRadius } from '@/constants/theme';
-import { generatePDF } from '@/utils/pdfGenerator';
 
-const initialMaterial: Material = {
-  id: '1',
-  name: '',
-  pricePerUnit: 0,
-  quantity: 0,
-  unit: 'piece',
-};
-
-export default function NewEstimate() {
+export default function EditEstimate() {
+  const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { addEstimate } = useEstimateStore();
-  const [showPreview, setShowPreview] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const [formData, setFormData] = useState<EstimateFormData>({
-    projectName: '',
-    clientName: '',
-    materials: [initialMaterial],
-    labor: {
-      rateType: 'hourly',
-      rate: 0,
-      hours: 0,
-    },
-    dimensions: {
-      length: 0,
-      width: 0,
-      height: 0,
-    },
-    taxRate: 20,
-    notes: '',
-  });
+  const { estimates, updateEstimate } = useEstimateStore();
+  const existingEstimate = estimates.find(e => e.id === id);
+
+  const [formData, setFormData] = useState<EstimateFormData>(
+    existingEstimate || {
+      projectName: '',
+      clientName: '',
+      materials: [],
+      labor: {
+        rateType: 'hourly',
+        rate: 0,
+        hours: 0,
+      },
+      dimensions: {
+        length: 0,
+        width: 0,
+        height: 0,
+      },
+      taxRate: 20,
+      notes: '',
+    }
+  );
+
+  if (!existingEstimate) {
+    return (
+      <View style={styles.container}>
+        <Text variant="headlineMedium" style={styles.errorText}>
+          Estimate not found
+        </Text>
+        <Button
+          mode="contained"
+          onPress={() => router.back()}
+          style={styles.button}
+        >
+          Go Back
+        </Button>
+      </View>
+    );
+  }
 
   const handleAddMaterial = () => {
     setFormData((prev) => ({
@@ -48,8 +56,11 @@ export default function NewEstimate() {
       materials: [
         ...prev.materials,
         {
-          ...initialMaterial,
           id: Math.random().toString(36).substring(7),
+          name: '',
+          pricePerUnit: 0,
+          quantity: 0,
+          unit: 'piece',
         },
       ],
     }));
@@ -69,37 +80,19 @@ export default function NewEstimate() {
     }));
   };
 
-  const handleSubmit = async () => {
-    setIsLoading(true);
-    try {
-      const estimate = addEstimate(formData);
-      
-      if (Platform.OS === 'web') {
-        const pdfBlob = await generatePDF(estimate);
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        setPdfUrl(pdfUrl);
-        setShowPreview(true);
-      }
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSubmit = () => {
+    updateEstimate(id, formData);
+    router.back();
   };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <IconButton
-          icon={() => <ArrowLeft size={24} color={theme.colors.primary} />}
-          onPress={() => router.back()}
-          style={styles.backButton}
-        />
         <Text variant="headlineMedium" style={styles.title}>
-          New Estimate
+          Edit Estimate
         </Text>
         <Text variant="bodyLarge" style={styles.subtitle}>
-          Create a detailed cost estimate for your project
+          Update estimate details
         </Text>
       </View>
 
@@ -293,50 +286,10 @@ export default function NewEstimate() {
           mode="contained"
           onPress={handleSubmit}
           style={styles.button}
-          loading={isLoading}
-          disabled={isLoading}
         >
-          Create Estimate & Generate PDF
+          Save Changes
         </Button>
       </View>
-
-      <Portal>
-        <Modal
-          visible={showPreview}
-          onDismiss={() => setShowPreview(false)}
-          contentContainerStyle={styles.modalContent}>
-          <Text variant="titleLarge" style={styles.modalTitle}>
-            Estimate PDF Preview
-          </Text>
-          {pdfUrl && (
-            <iframe
-              src={pdfUrl}
-              style={{ width: '100%', height: '70vh', border: 'none' }}
-            />
-          )}
-          <View style={styles.modalButtons}>
-            <Button
-              mode="outlined"
-              onPress={() => setShowPreview(false)}
-              style={styles.modalButton}>
-              Close Preview
-            </Button>
-            <Button
-              mode="contained"
-              onPress={() => {
-                if (pdfUrl) {
-                  const link = document.createElement('a');
-                  link.href = pdfUrl;
-                  link.download = `estimate-${formData.projectName}.pdf`;
-                  link.click();
-                }
-              }}
-              style={styles.modalButton}>
-              Download PDF
-            </Button>
-          </View>
-        </Modal>
-      </Portal>
     </ScrollView>
   );
 }
@@ -352,22 +305,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.outlineVariant,
   },
-  backButton: {
-    position: 'absolute',
-    left: spacing.sm,
-    top: spacing.sm,
-    zIndex: 1,
-  },
   title: {
     fontFamily: 'Inter_600SemiBold',
     color: theme.colors.onSurface,
-    textAlign: 'center',
-    marginTop: spacing.md,
   },
   subtitle: {
     color: theme.colors.outline,
     marginTop: spacing.xs,
-    textAlign: 'center',
   },
   card: {
     margin: spacing.md,
@@ -403,26 +347,8 @@ const styles = StyleSheet.create({
   button: {
     padding: spacing.xs,
   },
-  modalContent: {
-    backgroundColor: theme.colors.surface,
-    padding: spacing.lg,
-    margin: spacing.md,
-    borderRadius: borderRadius.lg,
-    maxWidth: 800,
-    width: '90%',
-    alignSelf: 'center',
-  },
-  modalTitle: {
-    marginBottom: spacing.md,
+  errorText: {
     textAlign: 'center',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
-    gap: spacing.md,
-  },
-  modalButton: {
-    flex: 1,
+    marginBottom: spacing.md,
   },
 });

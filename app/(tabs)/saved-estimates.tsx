@@ -1,7 +1,7 @@
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Searchbar, Text } from 'react-native-paper';
 import { useState } from 'react';
-import { EstimateCard } from '@/components';
+import EstimateCard from '@/components/EstimateCard';
 import { useEstimateStore } from '@/store/estimateStore';
 import { spacing, theme } from '@/constants/theme';
 

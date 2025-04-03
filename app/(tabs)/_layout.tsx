@@ -1,50 +1,52 @@
 import { Tabs } from 'expo-router';
 import { CirclePlus as PlusCircle, ListOrdered, Settings } from 'lucide-react-native';
 import { useTheme } from 'react-native-paper';
+import { Stack } from 'expo-router';
 
 export default function TabLayout() {
   const theme = useTheme();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.outline,
-        tabBarStyle: {
-          borderTopColor: theme.colors.outlineVariant,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
-        headerShown: true,
-      }}>
-      <Tabs.Screen
+    <Stack>
+      <Stack.Screen 
+        name="index"
+        options={{
+          headerShown: false
+        }}
+      />
+      <Stack.Screen 
         name="new-estimate"
         options={{
-          title: 'New Estimate',
-          tabBarIcon: ({ color, size }) => (
-            <PlusCircle size={size} color={color} />
-          ),
+          headerTitle: "New Estimate",
+          headerStyle: {
+            backgroundColor: theme.colors.surface,
+          },
+          headerTintColor: theme.colors.primary,
+          headerShadowVisible: false,
         }}
       />
-      <Tabs.Screen
+      <Stack.Screen 
         name="saved-estimates"
         options={{
-          title: 'Saved Estimates',
-          tabBarIcon: ({ color, size }) => (
-            <ListOrdered size={size} color={color} />
-          ),
+          headerTitle: "Saved Estimates",
+          headerStyle: {
+            backgroundColor: theme.colors.surface,
+          },
+          headerTintColor: theme.colors.primary,
+          headerShadowVisible: false,
         }}
       />
-      <Tabs.Screen
+      <Stack.Screen 
         name="settings"
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ color, size }) => (
-            <Settings size={size} color={color} />
-          ),
+          headerTitle: "Settings",
+          headerStyle: {
+            backgroundColor: theme.colors.surface,
+          },
+          headerTintColor: theme.colors.primary,
+          headerShadowVisible: false,
         }}
       />
-    </Tabs>
+    </Stack>
   );
 }
